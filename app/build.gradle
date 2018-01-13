@@ -2,12 +2,13 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 26
+    flavorDimensions "default"
     defaultConfig {
         applicationId "com.biswas.locationaccuracytimebarchart"
         minSdkVersion 14
         targetSdkVersion 26
         versionCode 1
-        versionName "1.0"
+        versionName "1.0.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -15,6 +16,21 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+    def final barchartApplicationId = 'com.biswas.locationaccuracytimebarchart'
+    productFlavors {
+        playStore {
+            applicationId barchartApplicationId
+            resValue "string", "app_name", "BarChart"
+            buildConfigField "String", "BARCHART_BASE_URL", '"https://......................"'
+        }
+
+        dev {
+            applicationId barchartApplicationId + ".dev"
+            resValue "string", "app_name", "BarChart Dev"
+            buildConfigField "String", "BARCHART_BASE_URL", '"https://......................"'
+        }
+
     }
 }
 repositories {
