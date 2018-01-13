@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">LocationAccuracyTimeBarChart</string>
+    <string name="app_name">BarChart</string>
+    <string name="accuracy">Current Location</string>
 </resources>
