@@ -1,5 +1,6 @@
 package com.biswas.locationaccuracytimebarchart.model;
 
+import android.app.ActivityManager;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -11,17 +12,30 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.support.v4.app.NotificationCompat;
 
-import com.biswas.locationaccuracytimebarchart.MainActivity;
+import com.biswas.locationaccuracytimebarchart.util.Constants;
+import com.biswas.locationaccuracytimebarchart.view.MainActivity;
 import com.biswas.locationaccuracytimebarchart.R;
+import com.biswas.locationaccuracytimebarchart.viewmodel.TimeAccuracy;
+import com.google.android.gms.plus.model.people.Person;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class NotificationBroadcastManager extends BroadcastReceiver
 {
+    public static ArrayList<TimeAccuracy> timeAccuracyList=new ArrayList<>();
 
     @Override
     public void onReceive(Context context, Intent intent)
     {
-        double accuracy = intent.getExtras().getDouble("accuracy",0);
-        displayNotification(context, accuracy);
+        int accuracy = intent.getExtras().getInt("accuracy", 0);
+        if (accuracy <= Constants.ACCURACY_SCALE)
+            displayNotification(context, accuracy);
+
+        timeAccuracyList = (ArrayList<TimeAccuracy>) intent
+                .getSerializableExtra("timeAccuracyList");
+        if (isRunning(context))
+            MainActivity.drawGraph(timeAccuracyList);
     }
 
     public void displayNotification(Context context, double accuracy)
@@ -37,7 +51,7 @@ public class NotificationBroadcastManager extends BroadcastReceiver
                 // Set Icon
                 .setSmallIcon(R.mipmap.ic_launcher_round)
                 // Set Ticker Message
-                .setTicker(""+accuracy)
+                .setTicker("" + accuracy)
                 // Set Title
                 .setContentTitle(context.getString(R.string.accuracy))
                 // Set Text
@@ -48,7 +62,7 @@ public class NotificationBroadcastManager extends BroadcastReceiver
                 .setContentIntent(pIntent)
                 // Dismiss Notification
                 .setAutoCancel(true)
-      .setSound(uri);
+                .setSound(uri);
         // Create Notification Manager
         NotificationManager notificationmanager = (NotificationManager) context
                 .getSystemService(Context.NOTIFICATION_SERVICE);
@@ -57,14 +71,22 @@ public class NotificationBroadcastManager extends BroadcastReceiver
 
     }
 
-    // Check for network availability
-    private boolean isNetworkAvailable(Context context)
+    private boolean isRunning(Context ctx)
     {
-        ConnectivityManager connectivityManager = (ConnectivityManager) context
-                .getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo activeNetworkInfo = connectivityManager
-                .getActiveNetworkInfo();
-        return activeNetworkInfo != null;
+        try
+        {
+            List<ActivityManager.RunningTaskInfo> tasks = ((ActivityManager) ctx.getSystemService(Context.ACTIVITY_SERVICE)).getRunningTasks(Integer.MAX_VALUE);
+            for (ActivityManager.RunningTaskInfo task : tasks)
+            {
+                if (ctx.getPackageName().equalsIgnoreCase(task.baseActivity.getPackageName()))
+                    return true;
+            }
+        }
+        catch (Exception e)
+        {
+            return false;
+        }
+        return false;
     }
 
 }

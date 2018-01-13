@@ -17,6 +17,7 @@ import android.support.annotation.Nullable;
 import android.view.accessibility.AccessibilityEvent;
 
 import com.biswas.locationaccuracytimebarchart.util.Constants;
+import com.biswas.locationaccuracytimebarchart.viewmodel.TimeAccuracy;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
@@ -24,7 +25,13 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
 
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -38,19 +45,25 @@ public class LocationUpdateService extends Service implements GoogleApiClient.Co
 
     private LocationRequest mLocationRequest;
 
+    private String strDateFormat = "HH:mm a";
     // Location updates intervals in sec
-    static int UPDATE_INTERVAL =5000; // 5 sec
-    static int FASTEST_INTERVAL = 5000; // 5 sec
-    static int DISPLACEMENT = 5; // 5 meters
-    Intent i;
+    private static int UPDATE_INTERVAL = 5000; // 5 sec
+    private static int FASTEST_INTERVAL = 5000; // 5 sec
+    private static int DISPLACEMENT = 5; // 5 meters
+    private Intent i;
+    private ArrayList<TimeAccuracy> timeAccuracyList;
+
     @Override
     public void onCreate()
     {
         super.onCreate();
+        timeAccuracyList = new ArrayList<>();
         startTimer();
     }
+
     @Override
-    public IBinder onBind(Intent intent) {
+    public IBinder onBind(Intent intent)
+    {
         return null;
     }
 
@@ -67,19 +80,11 @@ public class LocationUpdateService extends Service implements GoogleApiClient.Co
     @Override
     public void onLocationChanged(Location location)
     {
-        try
+        if (location != null)
         {
-            if (location != null)
-            {
-                double lat = location.getLatitude();
-                double longi = location.getLongitude();
-                int accuracy = (int) (location.getAccuracy());
-                long locTimeStamp = location.getTime();
-                sendLocation(locTimeStamp, lat, longi, accuracy);
-            }
-        } catch (Exception e)
-        {
-
+            int accuracy = (int) location.getAccuracy();
+            long locTimeStamp = location.getTime();
+            sendLocation(locTimeStamp, accuracy);
         }
     }
 
@@ -93,9 +98,7 @@ public class LocationUpdateService extends Service implements GoogleApiClient.Co
     public void onConnectionSuspended(int i)
     {
         if (mGoogleApiClient != null)
-        {
             mGoogleApiClient.connect();
-        }
     }
 
     @Override
@@ -111,7 +114,8 @@ public class LocationUpdateService extends Service implements GoogleApiClient.Co
         {
             mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
             return mLastLocation;
-        } catch (Exception e)
+        }
+        catch (Exception e)
         {
             return mLastLocation;
         }
@@ -126,7 +130,8 @@ public class LocationUpdateService extends Service implements GoogleApiClient.Co
         {
             mGoogleApiClient = new GoogleApiClient.Builder(this).addConnectionCallbacks(this).addOnConnectionFailedListener(this).addApi(LocationServices.API).build();
             mGoogleApiClient.connect();
-        } catch (Exception e)
+        }
+        catch (Exception e)
         {
 
         }
@@ -143,8 +148,9 @@ public class LocationUpdateService extends Service implements GoogleApiClient.Co
             mLocationRequest.setInterval(UPDATE_INTERVAL);
             mLocationRequest.setFastestInterval(FASTEST_INTERVAL);
             mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-            mLocationRequest.setSmallestDisplacement(DISPLACEMENT); // 10 meters
-        } catch (Exception e)
+            mLocationRequest.setSmallestDisplacement(DISPLACEMENT);
+        }
+        catch (Exception e)
         {
 
         }
@@ -159,7 +165,8 @@ public class LocationUpdateService extends Service implements GoogleApiClient.Co
         {
             if (mGoogleApiClient.isConnected())
                 LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
-        } catch (Exception e)
+        }
+        catch (Exception e)
         {
 
         }
@@ -174,7 +181,8 @@ public class LocationUpdateService extends Service implements GoogleApiClient.Co
         {
             if (mGoogleApiClient.isConnected())
                 LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
-        } catch (Exception e)
+        }
+        catch (Exception e)
         {
 
         }
@@ -183,12 +191,33 @@ public class LocationUpdateService extends Service implements GoogleApiClient.Co
     /**
      * Method to display the location on UI
      */
-    private void sendLocation(long locTimeStamp, double lat, double longi, double accuracy)
+    private void sendLocation(long locTimeStamp, int accuracy)
     {
-        i = new Intent();
-        i.putExtra("accuracy",accuracy);
-        i.setAction(Constants.CUSTOM_INTENT);
-        sendBroadcast(i);
+        ArrayList<TimeAccuracy> timeAccuracyList = addLocationInfoToList(locTimeStamp, accuracy);
+        if (accuracy <= Constants.ACCURACY_SCALE)
+        {
+            i = new Intent();
+            i.putExtra("accuracy", accuracy);
+            i.putExtra("timeAccuracyList", timeAccuracyList);
+            i.setAction(Constants.CUSTOM_INTENT);
+            sendBroadcast(i);
+        }
+    }
+
+    private ArrayList<TimeAccuracy> addLocationInfoToList(long locTimeStamp, int accuracy)
+    {
+        Date date = new Date(locTimeStamp);
+        SimpleDateFormat sdf = new SimpleDateFormat(strDateFormat, Locale.ENGLISH);
+        TimeAccuracy ta = new TimeAccuracy();
+        ta.setTime(sdf.format(date));
+        ta.setAccuracy(accuracy);
+        if (timeAccuracyList == null)
+            timeAccuracyList = new ArrayList<>();
+
+        if (timeAccuracyList.size() > 6)
+            timeAccuracyList.remove(0);
+        timeAccuracyList.add(timeAccuracyList.size(), ta);
+        return timeAccuracyList;
     }
 
     private void startTimer()
@@ -204,14 +233,11 @@ public class LocationUpdateService extends Service implements GoogleApiClient.Co
                     public void run()
                     {
                         sendLocationWheneverUserAtSameLocation();
-                        if (!isRunning(getApplicationContext()))
-                        {
-
-                        }
                     }
                 }, 10, 5 * 1000);
             }
-        } catch (Exception e)
+        }
+        catch (Exception e)
         {
 
         }
@@ -229,35 +255,18 @@ public class LocationUpdateService extends Service implements GoogleApiClient.Co
                 Location mLastLocation = getLastLocation();
                 if (mLastLocation != null)
                 {
-                    double lat = mLastLocation.getLatitude();
-                    double longi = mLastLocation.getLongitude();
                     int accuracy = (int) (mLastLocation.getAccuracy());
                     long locTimeStamp = mLastLocation.getTime();
-                    sendLocation(locTimeStamp, lat, longi, accuracy);
+                    sendLocation(locTimeStamp, accuracy);
                 }
             }
-        } catch (Exception e)
+        }
+        catch (Exception e)
         {
 
         }
     }
 
-    private boolean isRunning(Context ctx)
-    {
-        try
-        {
-            List<ActivityManager.RunningTaskInfo> tasks = ((ActivityManager) ctx.getSystemService(Context.ACTIVITY_SERVICE)).getRunningTasks(Integer.MAX_VALUE);
-            for (ActivityManager.RunningTaskInfo task : tasks)
-            {
-                if (ctx.getPackageName().equalsIgnoreCase(task.baseActivity.getPackageName()))
-                    return true;
-            }
-        } catch (Exception e)
-        {
-            return false;
-        }
-        return false;
-    }
 
     private void cancelTimer()
     {
@@ -269,7 +278,8 @@ public class LocationUpdateService extends Service implements GoogleApiClient.Co
                 timer.purge();
                 timer = null;
             }
-        } catch (Exception e)
+        }
+        catch (Exception e)
         {
 
         }

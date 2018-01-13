@@ -7,4 +7,5 @@ package com.biswas.locationaccuracytimebarchart.util;
 public class Constants
 {
     public static final String CUSTOM_INTENT = "accuracy.custom.intent.action.ON_GOOD_ACCURACY";
+    public static final int ACCURACY_SCALE = 30;
 }
