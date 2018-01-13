@@ -1,8 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
+    signingConfigs {
+    }
     compileSdkVersion 26
-    flavorDimensions "default"
+    flavorDimensions "versionCode"
     defaultConfig {
         applicationId "com.biswas.locationaccuracytimebarchart"
         minSdkVersion 14
@@ -43,6 +45,6 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
-    implementation 'com.google.android.gms:play-services:11.8.0'
+    implementation 'com.google.android.gms:play-services-location:11.8.0'
     implementation 'com.github.PhilJay:MPAndroidChart:v2.2.4'
 }

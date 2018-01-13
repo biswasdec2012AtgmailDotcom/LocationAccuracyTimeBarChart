@@ -16,7 +16,6 @@ import com.biswas.locationaccuracytimebarchart.util.Constants;
 import com.biswas.locationaccuracytimebarchart.view.MainActivity;
 import com.biswas.locationaccuracytimebarchart.R;
 import com.biswas.locationaccuracytimebarchart.viewmodel.TimeAccuracy;
-import com.google.android.gms.plus.model.people.Person;
 
 import java.util.ArrayList;
 import java.util.List;
